@@ -1,5 +1,7 @@
 const getProductsStatic=(req,res)=>{
-    res.send('all productes static');
+;
+    throw new Error("fuck you ")
+    res.send('all productes static')
 }
 
 const getProducts=(req,res)=>{
