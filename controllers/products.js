@@ -3,11 +3,11 @@ const productModel=require('../models/products-model');
 const getProductsStatic=async(req,res)=>{
     const productsList=await productModel.find({});
     res.status(200).json(productsList);
-
 }
 
 const getProducts=async(req,res)=>{
-    const {featured,company,name,sort,select}=req.query;
+    const {featured,company,name,sort,select,numericFilters}=req.query;
+    console.log(numericFilters);
     const queryObject={};
 
     if(featured){
@@ -20,6 +20,44 @@ const getProducts=async(req,res)=>{
 
     if(name){
         queryObject.name={$regex:name,$options: 'i'};
+    }
+    
+    if(numericFilters){
+        const operatorMap={
+            '>': '$gt',
+            '<': '$lt',
+            '>=': '$gte',
+            '=':  '$eq',
+            '<=': '$lte',
+        }
+        const regex=/\b(>|>=|<|<=|=)\b/g;
+        
+        const numericFiltersEdited=numericFilters.replace(regex,(match)=>`-${operatorMap[match]}-`);
+
+        console.log(numericFiltersEdited);
+
+        const filterList=['price','rating'];
+        
+        numericFiltersEdited.split(',').forEach(filter=>{
+
+            const [field,operator,value]=filter.split('-');
+
+            if(filterList.includes(field)){
+
+                if(!queryObject[field])
+
+                    queryObject[field]={[operator]:Number(value)}
+                
+                queryObject[field][operator]=Number(value);
+
+            }
+            else {
+                throw new Error("you can only apply numericFilters on price and rating")
+            }
+
+        })
+
+
     }
 
     const productsList= productModel.find(queryObject);
@@ -36,6 +74,8 @@ const getProducts=async(req,res)=>{
         productsList.select(selectList);
     }
 
+    console.log(queryObject);
+
 
     //pagination
     const page=Number(req.query.page)||1;
@@ -49,7 +89,7 @@ const getProducts=async(req,res)=>{
     const result=await productsList;
 
 
-    res.json(result);
+    res.status(200).json(result);
 }
 
 
